@@ -1,18 +1,13 @@
+import { Instance, Instances, OrbitControls } from "@react-three/drei";
+import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import {
-  Environment,
-  Instance,
-  Instances,
-  OrbitControls,
-} from "@react-three/drei";
-import { Canvas, useFrame } from "@react-three/fiber";
-import {
-  Noise,
   EffectComposer,
   TiltShift2,
   DepthOfField,
 } from "@react-three/postprocessing";
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import { MathUtils } from "three";
+import OrbitControlBtn from "../../components/OrbitControlBtn";
 
 const rows = 100;
 const columns = 100;
@@ -26,18 +21,34 @@ const particles = Array.from({ length: rows * columns }, (_, index) => ({
   size: MathUtils.randFloat(0.02, 0.04),
 }));
 
-export default function DotPlain() {
+export default function DotPlane() {
+  const defaultCameraPosition = [0, 0, 60];
+  const [orbitControls, setOrbitControls] = useState(false);
+  const cameraRef = useRef();
+
+  function toggleOrbitControls() {
+    if (orbitControls && cameraRef.current) {
+      cameraRef.current.position.set(...defaultCameraPosition);
+      cameraRef.current.lookAt(0, 0, 0);
+    }
+    setOrbitControls(!orbitControls);
+  }
+
   return (
     <div className="h-screen w-screen">
-      <Canvas camera={{ position: [0, 0, 60], fov: 50 }}>
+      <Canvas
+        camera={{ position: defaultCameraPosition, fov: 50 }}
+        onCreated={({ camera }) => (cameraRef.current = camera)}
+      >
         <color attach="background" args={["#e2e2e2"]} />
         <Dots />
+        {orbitControls && <OrbitControls />}
         <EffectComposer>
-          {/* <TiltShift2 blur={0.05} /> */}
-          {/* <Noise opacity={0.2} /> */}
+          <TiltShift2 blur={0.03} />
           <DepthOfField focusDistance={0} focalLength={0.5} bokehScale={2} />
         </EffectComposer>
       </Canvas>
+      <OrbitControlBtn onClick={toggleOrbitControls} />
     </div>
   );
 }
@@ -77,7 +88,7 @@ function Dots() {
 
   return (
     <Instances ref={ref} limit={particles.length}>
-      <sphereGeometry args={[1, 64, 64]} />
+      <sphereGeometry args={[1, 8, 8]} />
       <meshBasicMaterial color={"#525252"} roughness={1} />
       {particles.map((particle, index) => (
         <Instance
